@@ -100,13 +100,10 @@
             document.getElementById('inbox-container').innerHTML = '<p class="text-gray-500 text-xs text-center py-12">Listening for incoming verification links...</p>';
             
             try {
-                // Updated to use the proxy wrapper
                 const data = await fetchWithProxy('https://api.guerrillamail.com/ajax.php?f=get_email_address');
-                
                 sid = data.sid; 
                 emailUser = data.email_user; 
                 
-                // Updated to use the proxy wrapper
                 const domainData = await fetchWithProxy(`https://api.guerrillamail.com/ajax.php?f=get_domain_list&sid=${sid}`);
                 const activeDomains = domainData.list || ['sharklasers.com', 'guerrillamailblock.com'];
                 
@@ -126,129 +123,4 @@
                 checkInbox();
                 pollInterval = setInterval(checkInbox, 5000);
             } catch (err) {
-                document.getElementById('email-address').value = "Proxy Error.";
-                console.error("Initialization failure: ", err);
-            }
-        }
-
-        async function changeDomain() {
-            if (!sid || !emailUser) return;
-            resetCopyButton();
-            const selectedDomain = document.getElementById('domain-select').value;
-            
-            try {
-                // Updated to use the proxy wrapper
-                await fetchWithProxy(`https://api.guerrillamail.com/ajax.php?f=set_email_user&email_user=${emailUser}&lang=en&site=${selectedDomain}&sid=${sid}`);
-                updateEmailDisplay(selectedDomain);
-            } catch (err) {
-                console.error(err);
-            }
-        }
-
-        function updateEmailDisplay(domain) {
-            currentEmail = `${emailUser}@${domain}`;
-            document.getElementById('email-address').value = currentEmail;
-        }
-
-        async function checkInbox() {
-            if (!sid) return;
-            
-            try {
-                // Updated to use the proxy wrapper
-                const data = await fetchWithProxy(`https://api.guerrillamail.com/ajax.php?f=check_email&seq=0&sid=${sid}`);
-                
-                const messages = (data.list || [])
-                    .filter(msg => msg.mail_from !== 'no-reply@guerrillamail.com')
-                    .slice(0, 5);
-                
-                const container = document.getElementById('inbox-container');
-                
-                if (messages.length === 0) {
-                    container.innerHTML = '<p class="text-gray-500 text-xs text-center py-12">Listening for incoming verification links...</p>';
-                    return;
-                }
-                
-                container.innerHTML = ""; 
-                messages.forEach(msg => {
-                    const isSelected = activeMailId === msg.mail_id;
-                    const item = document.createElement('div');
-                    item.className = `p-3 rounded-lg border text-left transition cursor-pointer ${
-                        isSelected 
-                        ? 'bg-indigo-950/40 border-indigo-500/80 text-indigo-200' 
-                        : 'bg-gray-900 border-gray-700/60 hover:border-gray-500'
-                    }`;
-                    
-                    item.innerHTML = `
-                        <div class="flex justify-between text-[10px] text-gray-400 mb-0.5">
-                            <span class="truncate font-semibold text-indigo-400 max-w-[120px]">${msg.mail_from}</span>
-                            <span>${msg.mail_date}</span>
-                        </div>
-                        <div class="text-xs font-semibold truncate text-gray-200">${msg.mail_subject || '(No Subject)'}</div>
-                    `;
-                    item.onclick = () => selectEmail(msg.mail_id, item);
-                    container.appendChild(item);
-                });
-            } catch (err) {
-                console.error("Error updating mailbox lines:", err);
-            }
-        }
-
-        async function selectEmail(mailId, elementNode) {
-            activeMailId = mailId;
-            
-            document.querySelectorAll('#inbox-container > div').forEach(node => {
-                node.className = "p-3 rounded-lg border text-left transition cursor-pointer bg-gray-900 border-gray-700/60 hover:border-gray-500";
-            });
-            elementNode.className = "p-3 rounded-lg border text-left transition cursor-pointer bg-indigo-950/40 border-indigo-500/80 text-indigo-200";
-
-            const panePlaceholder = document.getElementById('pane-placeholder');
-            const paneContent = document.getElementById('pane-content');
-            const vSubject = document.getElementById('view-subject');
-            const vFrom = document.getElementById('view-from');
-            const vBody = document.getElementById('view-body');
-
-            panePlaceholder.classList.add('hidden');
-            paneContent.classList.remove('hidden');
-            vSubject.innerText = "Loading message body...";
-            vFrom.innerText = "";
-            vBody.innerHTML = '<div class="text-center py-8 text-gray-500 animate-pulse text-xs">Querying data packets...</div>';
-
-            try {
-                // Updated to use the proxy wrapper
-                const data = await fetchWithProxy(`https://api.guerrillamail.com/ajax.php?f=fetch_email&email_id=${mailId}&sid=${sid}`);
-                
-                vSubject.innerText = data.mail_subject || "(No Subject)";
-                vFrom.innerText = `From: ${data.mail_from} | Received: ${data.mail_date}`;
-                vBody.innerHTML = data.mail_body;
-            } catch (err) {
-                vBody.innerText = "Failed loading transaction streaming.";
-            }
-        }
-
-        function clearReadingPane() {
-            activeMailId = null;
-            document.getElementById('pane-placeholder').classList.remove('hidden');
-            document.getElementById('pane-content').classList.add('hidden');
-        }
-
-        function copyToClipboard() {
-            if (currentEmail && currentEmail !== "Generating...") {
-                navigator.clipboard.writeText(currentEmail);
-                const copyBtn = document.getElementById('copy-btn');
-                copyBtn.innerText = "Copied!";
-                copyBtn.className = "bg-green-600 px-3 text-xs font-semibold tracking-wide transition cursor-pointer border-l border-green-600 text-white";
-            }
-        }
-
-        function resetCopyButton() {
-            const copyBtn = document.getElementById('copy-btn');
-            if(copyBtn) {
-                copyBtn.innerText = "Copy";
-                copyBtn.className = "bg-gray-700 hover:bg-gray-600 px-3 text-xs font-semibold tracking-wide transition cursor-pointer border-l border-gray-700";
-            }
-        }
-
-        window.onload = generateNewEmail;
-    </script>
-</body>
-</html>
+                document.
