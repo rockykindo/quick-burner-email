@@ -72,23 +72,38 @@
         let pollInterval;
         let activeMailId = null;
 
-        // Upgraded helper function with a smart automatic fallback proxy
+        // Ultimate resilient proxy stack with premium public fallbacks
         async function fetchWithProxy(url) {
+            // Target 1: ScraperBox CORS proxy (Extremely stable)
             try {
-                // Primary Option: Try AllOrigins proxy
-                const primaryProxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-                const res = await fetch(primaryProxy);
-                if (!res.ok) throw new Error("Primary proxy failed");
+                const proxy1 = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+                const res = await fetch(proxy1);
+                if (!res.ok) throw new Error("AllOrigins failed");
                 const data = await res.json();
                 return JSON.parse(data.contents);
-            } catch (primaryError) {
-                console.warn("AllOrigins choked, switching to backup proxy...", primaryError);
+            } catch (err1) {
+                console.warn("AllOrigins choked, trying Codetabs...", err1);
                 
-                // Backup Option: Instantly fallback to Corsproxy.io
-                const backupProxy = `https://api.corsproxy.io/?url=${encodeURIComponent(url)}`;
-                const res = await fetch(backupProxy);
-                if (!res.ok) throw new Error("Both proxies failed");
-                return await res.json(); // Corsproxy.io returns clean JSON directly without a .contents wrapper
+                // Target 2: Codetabs CORS proxy (Great alternative fallback)
+                try {
+                    const proxy2 = `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`;
+                    const res = await fetch(proxy2);
+                    if (!res.ok) throw new Error("Codetabs failed");
+                    return await res.json();
+                } catch (err2) {
+                    console.warn("Codetabs choked, trying Corsproxy.io...", err2);
+                    
+                    // Target 3: Corsproxy.io (Final safety net)
+                    try {
+                        const proxy3 = `https://api.corsproxy.io/?url=${encodeURIComponent(url)}`;
+                        const res = await fetch(proxy3);
+                        if (!res.ok) throw new Error("Corsproxy failed");
+                        return await res.json();
+                    } catch (err3) {
+                        console.error("All public proxies in the stack have failed.", err3);
+                        throw err3;
+                    }
+                }
             }
         }
 
