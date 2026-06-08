@@ -1,4 +1,72 @@
-let currentEmail = "";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickBurner - Temp Email Generator</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        .custom-cursor:focus { caret-color: #818cf8; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="w-full max-w-5xl bg-gray-800 rounded-xl shadow-2xl p-6 border border-gray-700 flex flex-col gap-6">
+        
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-700 pb-4">
+            <div>
+                <h1 class="text-2xl font-bold text-indigo-400">🔥 QuickBurner</h1>
+                <p class="text-gray-400 text-xs mt-0.5">Minimalist disposable email engine.</p>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-2">
+                <select id="domain-select" onchange="changeDomain()" 
+                        class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs font-medium text-indigo-300 focus:outline-none focus:border-indigo-500 cursor-pointer">
+                </select>
+                
+                <div class="flex rounded-lg bg-gray-900 border border-gray-700 overflow-hidden">
+                    <input type="text" id="email-address" oninput="this.value = currentEmail" onclick="this.select()"
+                           class="bg-transparent px-3 py-2 text-sm font-mono text-indigo-300 focus:outline-none w-48 sm:w-64 text-center custom-cursor" value="Generating..." readonly>
+                    <button onclick="copyToClipboard()" id="copy-btn" class="bg-gray-700 hover:bg-gray-600 px-3 text-xs font-semibold tracking-wide transition cursor-pointer border-l border-gray-700">Copy</button>
+                </div>
+
+                <button onclick="generateNewEmail()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition cursor-pointer">New</button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-6 min-h-[400px]">
+            
+            <div class="md:col-span-2 flex flex-col gap-3">
+                <div class="flex justify-between items-center px-1">
+                    <h2 class="text-sm font-bold tracking-wider uppercase text-gray-400">Inbox (Max 5)</h2>
+                    <span id="status" class="text-[10px] bg-green-950/80 text-green-400 border border-green-900/50 px-2 py-0.5 rounded-full animate-pulse">Live</span>
+                </div>
+                
+                <div id="inbox-container" class="space-y-2 flex-1 overflow-y-auto">
+                    <p class="text-gray-500 text-xs text-center py-12">Listening for incoming verification links...</p>
+                </div>
+            </div>
+
+            <div class="md:col-span-3 bg-gray-900/40 border border-gray-700/70 rounded-xl p-5 flex flex-col" id="reading-pane">
+                <div class="flex flex-col items-center justify-center text-center h-full text-gray-500 py-12" id="pane-placeholder">
+                    <span class="text-3xl mb-2">✉️</span>
+                    <p class="text-xs">Select an email from the left feed to inspect content details directly inside this view window.</p>
+                </div>
+                
+                <div id="pane-content" class="hidden flex-col h-full">
+                    <div class="border-b border-gray-700 pb-3 mb-4">
+                        <h3 id="view-subject" class="text-lg font-bold text-indigo-300 mb-1">...</h3>
+                        <p id="view-from" class="text-xs text-gray-400">...</p>
+                    </div>
+                    <div id="view-body" class="flex-1 text-xs text-gray-300 overflow-y-auto pr-1 leading-relaxed"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        let currentEmail = "";
         let emailUser = ""; 
         let sid = ""; 
         let pollInterval;
@@ -20,13 +88,13 @@ let currentEmail = "";
             document.getElementById('inbox-container').innerHTML = '<p class="text-gray-500 text-xs text-center py-12">Listening for incoming verification links...</p>';
             
             try {
-                // Fetch email data through proxy
+                // Updated to use the proxy wrapper
                 const data = await fetchWithProxy('https://api.guerrillamail.com/ajax.php?f=get_email_address');
                 
                 sid = data.sid; 
                 emailUser = data.email_user; 
                 
-                // Fetch dynamic domain lists through proxy
+                // Updated to use the proxy wrapper
                 const domainData = await fetchWithProxy(`https://api.guerrillamail.com/ajax.php?f=get_domain_list&sid=${sid}`);
                 const activeDomains = domainData.list || ['sharklasers.com', 'guerrillamailblock.com'];
                 
@@ -57,6 +125,7 @@ let currentEmail = "";
             const selectedDomain = document.getElementById('domain-select').value;
             
             try {
+                // Updated to use the proxy wrapper
                 await fetchWithProxy(`https://api.guerrillamail.com/ajax.php?f=set_email_user&email_user=${emailUser}&lang=en&site=${selectedDomain}&sid=${sid}`);
                 updateEmailDisplay(selectedDomain);
             } catch (err) {
@@ -73,6 +142,7 @@ let currentEmail = "";
             if (!sid) return;
             
             try {
+                // Updated to use the proxy wrapper
                 const data = await fetchWithProxy(`https://api.guerrillamail.com/ajax.php?f=check_email&seq=0&sid=${sid}`);
                 
                 const messages = (data.list || [])
@@ -132,6 +202,7 @@ let currentEmail = "";
             vBody.innerHTML = '<div class="text-center py-8 text-gray-500 animate-pulse text-xs">Querying data packets...</div>';
 
             try {
+                // Updated to use the proxy wrapper
                 const data = await fetchWithProxy(`https://api.guerrillamail.com/ajax.php?f=fetch_email&email_id=${mailId}&sid=${sid}`);
                 
                 vSubject.innerText = data.mail_subject || "(No Subject)";
@@ -141,3 +212,31 @@ let currentEmail = "";
                 vBody.innerText = "Failed loading transaction streaming.";
             }
         }
+
+        function clearReadingPane() {
+            activeMailId = null;
+            document.getElementById('pane-placeholder').classList.remove('hidden');
+            document.getElementById('pane-content').classList.add('hidden');
+        }
+
+        function copyToClipboard() {
+            if (currentEmail && currentEmail !== "Generating...") {
+                navigator.clipboard.writeText(currentEmail);
+                const copyBtn = document.getElementById('copy-btn');
+                copyBtn.innerText = "Copied!";
+                copyBtn.className = "bg-green-600 px-3 text-xs font-semibold tracking-wide transition cursor-pointer border-l border-green-600 text-white";
+            }
+        }
+
+        function resetCopyButton() {
+            const copyBtn = document.getElementById('copy-btn');
+            if(copyBtn) {
+                copyBtn.innerText = "Copy";
+                copyBtn.className = "bg-gray-700 hover:bg-gray-600 px-3 text-xs font-semibold tracking-wide transition cursor-pointer border-l border-gray-700";
+            }
+        }
+
+        window.onload = generateNewEmail;
+    </script>
+</body>
+</html>
