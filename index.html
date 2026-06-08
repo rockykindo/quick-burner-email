@@ -77,7 +77,7 @@
             const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
             const res = await fetch(proxyUrl);
             const data = await res.json();
-            return JSON.parse(data.contents); // AllOrigins wraps the clean data inside a string
+            return JSON.parse(data.contents);
         }
 
         async function generateNewEmail() {
@@ -88,13 +88,10 @@
             document.getElementById('inbox-container').innerHTML = '<p class="text-gray-500 text-xs text-center py-12">Listening for incoming verification links...</p>';
             
             try {
-                // Updated to use the proxy wrapper
                 const data = await fetchWithProxy('https://api.guerrillamail.com/ajax.php?f=get_email_address');
-                
                 sid = data.sid; 
                 emailUser = data.email_user; 
                 
-                // Updated to use the proxy wrapper
                 const domainData = await fetchWithProxy(`https://api.guerrillamail.com/ajax.php?f=get_domain_list&sid=${sid}`);
                 const activeDomains = domainData.list || ['sharklasers.com', 'guerrillamailblock.com'];
                 
@@ -125,7 +122,6 @@
             const selectedDomain = document.getElementById('domain-select').value;
             
             try {
-                // Updated to use the proxy wrapper
                 await fetchWithProxy(`https://api.guerrillamail.com/ajax.php?f=set_email_user&email_user=${emailUser}&lang=en&site=${selectedDomain}&sid=${sid}`);
                 updateEmailDisplay(selectedDomain);
             } catch (err) {
@@ -142,9 +138,7 @@
             if (!sid) return;
             
             try {
-                // Updated to use the proxy wrapper
                 const data = await fetchWithProxy(`https://api.guerrillamail.com/ajax.php?f=check_email&seq=0&sid=${sid}`);
-                
                 const messages = (data.list || [])
                     .filter(msg => msg.mail_from !== 'no-reply@guerrillamail.com')
                     .slice(0, 5);
@@ -202,9 +196,7 @@
             vBody.innerHTML = '<div class="text-center py-8 text-gray-500 animate-pulse text-xs">Querying data packets...</div>';
 
             try {
-                // Updated to use the proxy wrapper
                 const data = await fetchWithProxy(`https://api.guerrillamail.com/ajax.php?f=fetch_email&email_id=${mailId}&sid=${sid}`);
-                
                 vSubject.innerText = data.mail_subject || "(No Subject)";
                 vFrom.innerText = `From: ${data.mail_from} | Received: ${data.mail_date}`;
                 vBody.innerHTML = data.mail_body;
