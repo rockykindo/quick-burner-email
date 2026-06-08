@@ -72,12 +72,24 @@
         let pollInterval;
         let activeMailId = null;
 
-        // Helper function to safely wrap API calls through a CORS proxy
+        // Upgraded helper function with a smart automatic fallback proxy
         async function fetchWithProxy(url) {
-            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-            const res = await fetch(proxyUrl);
-            const data = await res.json();
-            return JSON.parse(data.contents); // AllOrigins wraps the clean data inside a string
+            try {
+                // Primary Option: Try AllOrigins proxy
+                const primaryProxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+                const res = await fetch(primaryProxy);
+                if (!res.ok) throw new Error("Primary proxy failed");
+                const data = await res.json();
+                return JSON.parse(data.contents);
+            } catch (primaryError) {
+                console.warn("AllOrigins choked, switching to backup proxy...", primaryError);
+                
+                // Backup Option: Instantly fallback to Corsproxy.io
+                const backupProxy = `https://api.corsproxy.io/?url=${encodeURIComponent(url)}`;
+                const res = await fetch(backupProxy);
+                if (!res.ok) throw new Error("Both proxies failed");
+                return await res.json(); // Corsproxy.io returns clean JSON directly without a .contents wrapper
+            }
         }
 
         async function generateNewEmail() {
