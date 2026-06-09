@@ -226,9 +226,11 @@
             Why do I see the same email address when I click "New"?
           </h3>
           <p class="text-gray-400 text-xs leading-relaxed">
-            To maximize connection performance and maintain ongoing validation stability, 
-            the system persists your connection block. If you wish to rotate your mailbox layout 
-            entirely, click the trash can **Burn** icon to shred your token allocation before generating a new identity.
+            To maximize connection performance and maintain ongoing validation
+            stability, the system persists your connection block. If you wish to
+            rotate your mailbox layout entirely, click the trash can **Burn**
+            icon to shred your token allocation before generating a new
+            identity.
           </p>
         </div>
       </div>
@@ -237,7 +239,7 @@
     <script>
       let currentEmail = "";
       let currentProvider = "guerrilla";
-      let currentSid = null; 
+      let currentSid = null;
       let activeMailId = null;
       let pollInterval = null;
       let forceNewSessionFlag = false; // CRITICAL: Tracks manual destruction loops to bypass IP lock
@@ -275,7 +277,7 @@
 
         currentEmail = "";
         currentSid = null;
-        forceNewSessionFlag = false; 
+        forceNewSessionFlag = false;
         document.getElementById("email-address").value = "Sync Required...";
         updateSyncStatus(
           "Sync Required",
@@ -314,18 +316,22 @@
             body: JSON.stringify({
               provider: currentProvider,
               domain: activeDomain,
-              force_new: forceNewSessionFlag // PIPING WORKAROUND: Injects flag down to FastAPI network model
             }),
           });
 
           if (!res.ok) throw new Error("Backend connection error.");
           const data = await res.json();
 
-          // Reset the safety flags immediately upon successful handshake completion
-          forceNewSessionFlag = false;
+          currentSid = data.sid; // Pulling session token down safely
 
-          currentEmail = data.email;
-          currentSid = data.sid; 
+          // FIX: Extract the prefix from the returned email and attach the user-selected domain
+          if (currentProvider === "guerrilla") {
+            const prefix = data.email.split("@")[0];
+            currentEmail = `${prefix}@${activeDomain}`;
+          } else {
+            currentEmail = data.email;
+          }
+
           addressInput.value = currentEmail;
 
           updateSyncStatus(
@@ -385,10 +391,10 @@
       function burnCurrentSession() {
         recordActivity();
         clearInterval(pollInterval);
-        
+
         // Arm the bypass flag so the next "New" generation strips server affinity locks
         forceNewSessionFlag = true;
-        
+
         currentEmail = "";
         currentSid = null;
         activeMailId = null;
