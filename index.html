@@ -223,14 +223,12 @@
           class="bg-gray-800/40 border border-gray-800 p-5 rounded-xl flex flex-col gap-2"
         >
           <h3 class="text-sm font-semibold text-gray-200">
-            Why should I toggle between multiple email server providers?
+            Why do I see the same email address when I click "New"?
           </h3>
           <p class="text-gray-400 text-xs leading-relaxed">
-            Many modern reward portals and subscription services maintain severe
-            blacklists against heavily utilized public burner domains. If a
-            target network displays a registration error, simply use our server
-            dropdown menu to route your connection via alternative fallback
-            architecture instantly.
+            To maximize connection performance and maintain ongoing validation stability, 
+            the system persists your connection block. If you wish to rotate your mailbox layout 
+            entirely, click the trash can **Burn** icon to shred your token allocation before generating a new identity.
           </p>
         </div>
       </div>
@@ -239,9 +237,10 @@
     <script>
       let currentEmail = "";
       let currentProvider = "guerrilla";
-      let currentSid = null; // Storing active tracking session IDs natively
+      let currentSid = null; 
       let activeMailId = null;
       let pollInterval = null;
+      let forceNewSessionFlag = false; // CRITICAL: Tracks manual destruction loops to bypass IP lock
 
       const POLLING_DELAY = 15000;
       const INACTIVITY_LIMIT = 10 * 60 * 1000;
@@ -274,9 +273,9 @@
           domainSelect.appendChild(opt);
         });
 
-        // FIX: Clears lingering old identities across engine switches instantly!
         currentEmail = "";
         currentSid = null;
+        forceNewSessionFlag = false; 
         document.getElementById("email-address").value = "Sync Required...";
         updateSyncStatus(
           "Sync Required",
@@ -315,14 +314,18 @@
             body: JSON.stringify({
               provider: currentProvider,
               domain: activeDomain,
+              force_new: forceNewSessionFlag // PIPING WORKAROUND: Injects flag down to FastAPI network model
             }),
           });
 
           if (!res.ok) throw new Error("Backend connection error.");
           const data = await res.json();
 
+          // Reset the safety flags immediately upon successful handshake completion
+          forceNewSessionFlag = false;
+
           currentEmail = data.email;
-          currentSid = data.sid; // Pulling session token down safely
+          currentSid = data.sid; 
           addressInput.value = currentEmail;
 
           updateSyncStatus(
@@ -349,7 +352,6 @@
         if (!currentEmail) return;
 
         try {
-          // Fetch loop now pipes the sid string directly to avoid empty array caching glitches
           let url = `/api/check-inbox?email=${encodeURIComponent(currentEmail)}&provider=${currentProvider}`;
           if (currentSid) url += `&sid=${currentSid}`;
 
@@ -383,6 +385,10 @@
       function burnCurrentSession() {
         recordActivity();
         clearInterval(pollInterval);
+        
+        // Arm the bypass flag so the next "New" generation strips server affinity locks
+        forceNewSessionFlag = true;
+        
         currentEmail = "";
         currentSid = null;
         activeMailId = null;
@@ -393,22 +399,16 @@
         updateSyncStatus("Idle", "bg-gray-950 text-gray-500 border-gray-800");
       }
 
-      // Keep track of the current mails in global memory so we can compare them
       let currentMailsState = [];
 
       function renderInboxItems(mails) {
         const container = document.getElementById("inbox-container");
-
-        // Safety check: if backend returns null/undefined, treat it as an empty array
         const incomingMails = mails || [];
 
-        // 1. If we have active emails displayed, but the backend sends an empty array,
-        // IGNORE IT. Do not wipe out the user's view for a transient API cycle.
         if (incomingMails.length === 0 && currentMailsState.length > 0) {
           return;
         }
 
-        // 2. If the inbox is completely empty and the server has nothing, show the default listener text
         if (incomingMails.length === 0) {
           currentMailsState = [];
           if (!container.innerHTML.includes("Listening for incoming")) {
@@ -418,14 +418,11 @@
           return;
         }
 
-        // 3. Simple State Diffing: If the incoming data matches our current state exactly,
-        // do nothing! This prevents unnecessary layout shifts and flashing.
         const stateString = JSON.stringify(incomingMails);
         if (stateString === JSON.stringify(currentMailsState)) {
           return;
         }
 
-        // 4. Update our memory state and render the fresh emails safely
         currentMailsState = incomingMails;
         container.innerHTML = "";
 
