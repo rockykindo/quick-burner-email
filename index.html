@@ -393,13 +393,24 @@
         updateSyncStatus("Idle", "bg-gray-950 text-gray-500 border-gray-800");
       }
 
+      // Keep track of the current mails in global memory so we can compare them
+      let currentMailsState = [];
+
       function renderInboxItems(mails) {
         const container = document.getElementById("inbox-container");
 
-        // FIX 1: If the server returns null, undefined, or a completely empty array,
-        // keep the active text on screen instead of wiping out the layout container into a void.
-        if (!mails || mails.length === 0) {
-          // Only reset the text if it's completely empty or wasn't already showing the listener text
+        // Safety check: if backend returns null/undefined, treat it as an empty array
+        const incomingMails = mails || [];
+
+        // 1. If we have active emails displayed, but the backend sends an empty array,
+        // IGNORE IT. Do not wipe out the user's view for a transient API cycle.
+        if (incomingMails.length === 0 && currentMailsState.length > 0) {
+          return;
+        }
+
+        // 2. If the inbox is completely empty and the server has nothing, show the default listener text
+        if (incomingMails.length === 0) {
+          currentMailsState = [];
           if (!container.innerHTML.includes("Listening for incoming")) {
             container.innerHTML =
               '<p class="text-gray-500 text-xs text-center py-24">Listening for incoming verification links...</p>';
@@ -407,8 +418,18 @@
           return;
         }
 
+        // 3. Simple State Diffing: If the incoming data matches our current state exactly,
+        // do nothing! This prevents unnecessary layout shifts and flashing.
+        const stateString = JSON.stringify(incomingMails);
+        if (stateString === JSON.stringify(currentMailsState)) {
+          return;
+        }
+
+        // 4. Update our memory state and render the fresh emails safely
+        currentMailsState = incomingMails;
         container.innerHTML = "";
-        mails.forEach((mail) => {
+
+        incomingMails.forEach((mail) => {
           const div = document.createElement("div");
           div.className = `p-3 rounded-lg border text-left cursor-pointer transition flex flex-col gap-1 ${activeMailId === mail.id ? "bg-indigo-950/40 border-indigo-500/50" : "bg-gray-900/60 border-gray-700/50 hover:border-gray-600"}`;
           div.onclick = () => loadEmailContent(mail.id);
