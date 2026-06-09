@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
     <title>Temp Email ID - Fast & Free Disposable Mail Generator</title>
     <meta name="description" content="Get anonymous temporary email addresses to bypass verification screens and block spam instantly. Create yours in 1 click!">
-    
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         .custom-cursor:focus { caret-color: #818cf8; }
@@ -23,7 +21,7 @@
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-700 pb-4">
             <div>
                 <h1 class="text-2xl font-bold text-indigo-400">🔥 Temp Email ID</h1>
-                <p class="text-gray-400 text-xs mt-0.5">Generate an instant disposable email ID. No signups, no tracking, pure speed.</p>
+                <p class="text-gray-400 text-xs mt-0.5">Generate an instant disposable email ID with no signups, no tracking, and pure speed.</p>
             </div>
             
             <div class="flex flex-wrap items-center gap-2">
@@ -59,7 +57,7 @@
             </div>
         </div>
 
-        <div class="w-full bg-gray-900/40 border border-dashed border-gray-700/60 rounded-xl p-2 flex items-center justify-center min-h-[90px]">
+        <div class="w-full bg-gray-900/40 border border-dashed border-gray-700/60 rounded-xl p-2 flex items-center justify-center min-h-[90px] h-[90px]" id="ad-zone-header">
             <span class="text-[10px] text-gray-600 font-mono tracking-wider uppercase">Sponsored Ad Zone</span>
         </div>
 
@@ -72,7 +70,7 @@
                             <h2 class="text-sm font-bold tracking-wider uppercase text-gray-400">Inbox Feed</h2>
                             <button onclick="checkInboxManually()" title="Force Refresh Check" class="text-xs text-gray-500 hover:text-indigo-400 transition cursor-pointer">🔄</button>
                         </div>
-                        <span id="status-badge" class="text-[10px] bg-green-950/80 text-green-400 border border-green-900/50 px-2 py-0.5 rounded-full tracking-wide">Live Sync</span>
+                        <span id="status-badge" class="text-[10px] bg-gray-950 text-gray-500 border border-gray-800 px-2 py-0.5 rounded-full tracking-wide">Idle</span>
                     </div>
                     
                     <div id="inbox-container" class="space-y-2 flex-1 overflow-y-auto max-h-[300px] pr-1">
@@ -80,7 +78,7 @@
                     </div>
                 </div>
 
-                <div class="bg-gray-900/40 border border-dashed border-gray-700/60 rounded-xl p-2 flex items-center justify-center min-h-[200px]">
+                <div class="bg-gray-900/40 border border-dashed border-gray-700/60 rounded-xl p-2 flex items-center justify-center min-h-[200px] h-[200px]" id="ad-zone-sidebar">
                     <span class="text-[10px] text-gray-600 font-mono tracking-wider uppercase">Sponsored Ad Zone</span>
                 </div>
             </div>
@@ -118,20 +116,13 @@
                 <h3 class="text-sm font-semibold text-gray-200">Why should I toggle between multiple email server providers?</h3>
                 <p class="text-gray-400 text-xs leading-relaxed">Many modern reward portals and subscription services maintain severe blacklists against heavily utilized public burner domains. If a target network displays a registration error, simply use our server dropdown menu to route your connection via alternative fallback architecture instantly.</p>
             </div>
-            <div class="bg-gray-800/40 border border-gray-800 p-5 rounded-xl flex flex-col gap-2">
-                <h3 class="text-sm font-semibold text-gray-200">How long do incoming verification messages stay alive here?</h3>
-                <p class="text-gray-400 text-xs leading-relaxed">Depending on the selected backend server pipeline, messages reside in cache anywhere from 10 minutes to an hour. We recommend maintaining an active browser tab view until you successfully extract your specific activation link or registration passcode block.</p>
-            </div>
-            <div class="bg-gray-800/40 border border-gray-800 p-5 rounded-xl flex flex-col gap-2">
-                <h3 class="text-sm font-semibold text-gray-200">Is using an online temp email address private and secure?</h3>
-                <p class="text-gray-400 text-xs leading-relaxed">Yes. Our system stores zero persistent personal identity maps or local track strings. Because no registration or profile credentials are requested, your actual network identity cannot be matched against the randomized temporary prefix labels generated during a session loop.</p>
-            </div>
         </div>
     </footer>
 
     <script>
         let currentEmail = "";
         let currentProvider = "guerrilla";
+        let currentSid = null; // Storing active tracking session IDs natively
         let activeMailId = null;
         let pollInterval = null;
         
@@ -140,8 +131,8 @@
         let lastActivityTime = Date.now();
 
         const providerDomains = {
-            guerrilla: ['sharklasers.com', 'guerrillamail.com', 'grr.la'],
-            mailtm: ['mailtm.com', 'tempid.tech', 'moakt.cc'],
+            guerrilla: ['sharklasers.com', 'guerrillamail.com', 'guerrillamailblock.com'],
+            mailtm: ['mailtm.com', 'tempid.tech'],
             mailinator: ['mailinator.com', 'veryonpoint.com']
         };
 
@@ -162,9 +153,11 @@
                 domainSelect.appendChild(opt);
             });
 
-            if (currentEmail) {
-                document.getElementById('email-address').value = "Sync Required...";
-            }
+            // FIX: Clears lingering old identities across engine switches instantly!
+            currentEmail = "";
+            currentSid = null;
+            document.getElementById('email-address').value = "Sync Required...";
+            updateSyncStatus("Sync Required", "bg-amber-950 text-amber-400 border-amber-900/50");
         }
 
         function changeDomain() {
@@ -184,7 +177,7 @@
             btn.disabled = true;
             btn.innerText = "Wait...";
             addressInput.value = "Generating Engine Data...";
-            inbox.innerHTML = '<p class="text-gray-500 text-xs text-center py-24">Requesting clean mailbox pool from provider node...</p>';
+            inbox.innerHTML = '<p class="text-gray-500 text-xs text-center py-24">Syncing with remote node proxy...</p>';
 
             clearInterval(pollInterval);
             clearReadingPane();
@@ -197,10 +190,11 @@
                     body: JSON.stringify({ provider: currentProvider, domain: activeDomain })
                 });
                 
-                if (!res.ok) throw new Error("Backend node dropped packet.");
+                if (!res.ok) throw new Error("Backend connection error.");
                 const data = await res.json();
                 
                 currentEmail = data.email;
+                currentSid = data.sid; // Pulling session token down safely
                 addressInput.value = currentEmail;
                 
                 updateSyncStatus("Live Sync", "bg-green-950/80 text-green-400 border-green-900/50 animate-pulse");
@@ -208,14 +202,11 @@
                 pollInterval = setInterval(checkInbox, POLLING_DELAY);
                 
             } catch (err) {
-                console.error(err);
                 addressInput.value = "Server Core Offline";
-                inbox.innerHTML = '<p class="text-rose-400/80 text-xs text-center py-24">Failed to synchronize with local API. Ensure your backend server is up and listening.</p>';
+                inbox.innerHTML = '<p class="text-rose-400/80 text-xs text-center py-24">Failed to synchronize with local API.</p>';
             } finally {
-                setTimeout(() => {
-                    btn.disabled = false;
-                    btn.innerText = "New";
-                }, 3000);
+                btn.disabled = false;
+                btn.innerText = "New";
             }
         }
 
@@ -227,24 +218,27 @@
             if (!currentEmail) return;
 
             try {
-                const res = await fetch(`/api/check-inbox?email=${encodeURIComponent(currentEmail)}&provider=${currentProvider}`);
+                // Fetch loop now pipes the sid string directly to avoid empty array caching glitches
+                let url = `/api/check-inbox?email=${encodeURIComponent(currentEmail)}&provider=${currentProvider}`;
+                if (currentSid) url += `&sid=${currentSid}`;
+                
+                const res = await fetch(url);
                 if (!res.ok) return;
                 const data = await res.json();
                 renderInboxItems(data.mails || []);
             } catch (err) {
-                console.warn("Unable to poll sync node currently:", err);
+                console.warn("Unable to sync:", err);
             }
         }
 
         function checkInboxManually() {
             recordActivity();
             if (!currentEmail) return;
-            const badge = document.getElementById('status-badge');
             updateSyncStatus("Checking...", "bg-indigo-950 text-indigo-400 border-indigo-900/50");
             checkInbox().then(() => {
                 setTimeout(() => {
-                    updateSyncStatus("Live Sync", "bg-green-950/80 text-green-400 border-green-900/50 animate-pulse");
-                }, 1000);
+                    if (currentEmail) updateSyncStatus("Live Sync", "bg-green-950/80 text-green-400 border-green-900/50 animate-pulse");
+                }, 800);
             });
         }
 
@@ -252,6 +246,7 @@
             recordActivity();
             clearInterval(pollInterval);
             currentEmail = "";
+            currentSid = null;
             activeMailId = null;
             document.getElementById('email-address').value = "Click New to Init...";
             document.getElementById('inbox-container').innerHTML = '<p class="text-gray-500 text-xs text-center py-24">Session destroyed. Generate a fresh email identity above.</p>';
@@ -267,7 +262,7 @@
             }
 
             container.innerHTML = "";
-            mails.slice(0, 5).forEach(mail => {
+            mails.forEach(mail => {
                 const div = document.createElement('div');
                 div.className = `p-3 rounded-lg border text-left cursor-pointer transition flex flex-col gap-1 ${activeMailId === mail.id ? 'bg-indigo-950/40 border-indigo-500/50' : 'bg-gray-900/60 border-gray-700/50 hover:border-gray-600'}`;
                 div.onclick = () => loadEmailContent(mail.id);
@@ -295,7 +290,10 @@
             contentArea.classList.add('hidden');
 
             try {
-                const res = await fetch(`/api/get-mail-body?id=${mailId}&provider=${currentProvider}`);
+                let url = `/api/get-mail-body?id=${mailId}&provider=${currentProvider}`;
+                if (currentSid) url += `&sid=${currentSid}`;
+                
+                const res = await fetch(url);
                 const data = await res.json();
                 
                 placeholder.classList.add('hidden');
@@ -305,17 +303,15 @@
                 document.getElementById('view-subject').innerText = data.subject;
                 document.getElementById('view-from').innerText = `From: ${data.from}`;
                 document.getElementById('view-body').innerHTML = data.body;
-                
-                checkInbox();
             } catch (err) {
                 placeholder.className = "flex flex-col items-center justify-center text-center h-full text-rose-400 py-24";
-                placeholder.innerHTML = "<p class='text-xs'>Failed to fetch complete message body safely from memory nodes.</p>";
+                placeholder.innerHTML = "<p class='text-xs'>Failed to fetch complete message body safely.</p>";
             }
         }
 
         function recordActivity() { lastActivityTime = Date.now(); }
         function setupInactivityTrackers() {
-            ['click', 'mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(evt => {
+            ['click', 'mousedown', 'mousemove', 'keypress'].forEach(evt => {
                 document.addEventListener(evt, recordActivity, { passive: true });
             });
         }
@@ -323,12 +319,9 @@
         function triggerInactivityKillSwitch() {
             clearInterval(pollInterval);
             updateSyncStatus("Sync Paused", "bg-amber-950/80 text-amber-400 border-amber-900/50");
-            
-            const container = document.getElementById('inbox-container');
-            container.innerHTML = `
+            document.getElementById('inbox-container').innerHTML = `
                 <div class="text-center py-12 px-4 flex flex-col items-center gap-2">
-                    <p class="text-amber-400/80 text-xs font-medium">Session Suspended due to Inactivity</p>
-                    <p class="text-gray-500 text-[11px] max-w-[200px] leading-normal">Automatic tracking loops dropped. Click below to resume monitoring.</p>
+                    <p class="text-amber-400/80 text-xs font-medium">Session Suspended</p>
                     <button onclick="resumeSyncCycle()" class="mt-2 bg-gray-700 hover:bg-gray-600 text-gray-200 font-semibold text-[10px] px-3 py-1.5 rounded-md transition cursor-pointer">Resume Sync</button>
                 </div>
             `;
@@ -356,15 +349,8 @@
             navigator.clipboard.writeText(copyText).then(() => {
                 const btn = document.getElementById('copy-btn');
                 btn.innerText = "Copied!";
-                btn.className = "bg-green-700 text-white px-3 text-xs font-semibold tracking-wide border-l border-green-700 transition";
-                setTimeout(resetCopyButton, 2000);
+                setTimeout(() => { btn.innerText = "Copy"; }, 2000);
             });
-        }
-
-        function resetCopyButton() {
-            const btn = document.getElementById('copy-btn');
-            btn.innerText = "Copy";
-            btn.className = "bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 text-xs font-semibold tracking-wide border-l border-gray-700 transition cursor-pointer";
         }
 
         function clearReadingPane() {
