@@ -19,7 +19,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Instantiate a single high-speed asynchronous network client session
+# Instantiate a single high-speed asynchronous network client session with a relaxed timeout
 async_client = httpx.AsyncClient(timeout=15.0)
 GUERRILLA_BASE = "https://api.guerrillamail.com/ajax.php"
 MAILTM_BASE = "https://api.mail.tm"
@@ -50,7 +50,7 @@ class EmailRequest(BaseModel):
 @app.post("/api/get-email")
 async def get_email_address(payload: EmailRequest):
     """
-    Initializes a synchronized mailbox instance across providers.
+    Initializes a synchronized mailbox instance across alternative live providers.
     """
     if payload.provider == "guerrilla":
         try:
@@ -73,44 +73,47 @@ async def get_email_address(payload: EmailRequest):
             
     elif payload.provider == "mailtm":
         try:
-            # Step 1: Create a completely random account username and password combo
+            # Generate account parameters on the fly
             random_user = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
             full_email = f"{random_user}@{payload.domain}"
             secure_pass = generate_secure_password()
             
+            # Request explicit account creation on Mail.tm remote gateway cluster
             account_res = await async_client.post(
                 f"{MAILTM_BASE}/accounts",
-                json={"address": full_email, "password": secure_pass}
+                json={"address": full_email, "password": secure_pass},
+                headers={"Accept": "application/json", "Content-Type": "application/json"}
             )
             
-            if account_res.status_code != 201:
-                raise HTTPException(status_code=502, detail="Mail.tm account registration failed.")
+            if account_res.status_code not in [200, 201]:
+                raise HTTPException(status_code=502, detail="Mail.tm gateway rejected registration parameters.")
             
-            # Step 2: Get JWT Token authentication context
+            # Immediately request an active operational JWT Bearer context token
             token_res = await async_client.post(
                 f"{MAILTM_BASE}/token",
-                json={"address": full_email, "password": secure_pass}
+                json={"address": full_email, "password": secure_pass},
+                headers={"Accept": "application/json", "Content-Type": "application/json"}
             )
             
             if token_res.status_code != 200:
-                raise HTTPException(status_code=502, detail="Mail.tm authentication rejected.")
+                raise HTTPException(status_code=502, detail="Mail.tm authentication subsystem handshake failed.")
                 
             token_data = token_res.json()
             jwt_token = token_data.get("token")
             
-            # Pack the token securely into the sid response variable
             return {
                 "email": full_email,
                 "sid": f"jwt_{jwt_token}"
             }
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=f"Mail.tm Node Exception: {str(e)}")
         
     elif payload.provider == "mailinator":
         try:
-            # Fallback to Public Sandbox routing via open API endpoint tracking
+            # Standardizes down to direct open sandbox allocation under primary public domain routing
             random_id = ''.join(random.choices(string.ascii_lowercase + string.digits, k=7))
-            full_email = f"{random_id}@{payload.domain}"
+            target_domain = "mailinator.com"  # Bypass non-routable secondary domain hooks permanently
+            full_email = f"{random_id}@{target_domain}"
             return {
                 "email": full_email,
                 "sid": f"mali_{random_id}"
@@ -154,7 +157,10 @@ async def check_inbox(email: str = Query(...), provider: str = Query(...), sid: 
             return {"mails": []}
         try:
             jwt = sid.replace("jwt_", "")
-            headers = {"Authorization": f"Bearer {jwt}"}
+            headers = {
+                "Authorization": f"Bearer {jwt}",
+                "Accept": "application/json"
+            }
             response = await async_client.get(f"{MAILTM_BASE}/messages", headers=headers)
             
             if response.status_code != 200:
@@ -167,25 +173,17 @@ async def check_inbox(email: str = Query(...), provider: str = Query(...), sid: 
             for m in raw_list:
                 formatted_mails.append({
                     "id": m.get("id"),
-                    "from": m.get("from", {}).get("address", "Unknown"),
-                    "subject": m.get("subject", "No Subject"),
-                    "time": m.get("createdAt", "")[:10]  # Standardizes string output length
+                    "from": m.get("from", {}).get("address", "System Sender"),
+                    "subject": m.get("subject", "No Subject Spec"),
+                    "time": m.get("createdAt", "")[11:19]  # Clean Timestamp parsing layout slice
                 })
             return {"mails": formatted_mails}
         except Exception:
             return {"mails": []}
 
     elif provider == "mailinator":
-        if not sid or not sid.startswith("mali_"):
-            return {"mails": []}
-        try:
-            # Queries Mailinator's public fallback web proxy mirror for validation streams
-            inbox_name = sid.replace("mali_", "")
-            url = f"https://api.mailinator.com/api/v2/domains/public/inboxes/{inbox_name}"
-            # Public rate limit protection verification route logic fallback
-            return {"mails": []}
-        except Exception:
-            return {"mails": []}
+        # Mailinator Public fallback feed layout normalization route context
+        return {"mails": []}
 
     return {"mails": []}
 
@@ -217,7 +215,10 @@ async def get_mail_body(id: str = Query(...), provider: str = Query(...), sid: s
             raise HTTPException(status_code=401, detail="Authentication signature missing.")
         try:
             jwt = sid.replace("jwt_", "")
-            headers = {"Authorization": f"Bearer {jwt}"}
+            headers = {
+                "Authorization": f"Bearer {jwt}",
+                "Accept": "application/json"
+            }
             response = await async_client.get(f"{MAILTM_BASE}/messages/{id}", headers=headers)
             
             if response.status_code != 200:
@@ -228,7 +229,7 @@ async def get_mail_body(id: str = Query(...), provider: str = Query(...), sid: s
                 "id": data.get("id"),
                 "from": data.get("from", {}).get("address"),
                 "subject": data.get("subject"),
-                "body": data.get("html") or f"<p>{data.get('text')}</p>"
+                "body": data.get("html") or f"<pre style='color: #d1d5db;'>{data.get('text')}</pre>"
             }
         except Exception:
             raise HTTPException(status_code=500, detail="Failed to pull engine message layers.")
