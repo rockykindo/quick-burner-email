@@ -5,13 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <title>Temp Email ID - Fast & Free Disposable Mail Generator</title>
-    
-    <meta name="description" content="<meta name="description" content="Get anonymous temporary email addresses to bypass verification screens and block spam instantly. Create yours in 1 click!">">
+    <meta name="description" content="Get anonymous temporary email addresses to bypass verification screens and block spam instantly. Create yours in 1 click!">
     
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         .custom-cursor:focus { caret-color: #818cf8; }
-        /* Smooth custom tracking scrollbar for dark layout contexts */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #111827; }
         ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
@@ -25,7 +23,7 @@
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-700 pb-4">
             <div>
                 <h1 class="text-2xl font-bold text-indigo-400">🔥 Temp Email ID</h1>
-                <p class="text-gray-400 text-xs mt-0.5">High-speed minimalist disposable email platform.</p>
+                <p class="text-gray-400 text-xs mt-0.5">Generate an instant disposable email ID. No signups, no tracking, pure speed.</p>
             </div>
             
             <div class="flex flex-wrap items-center gap-2">
@@ -38,7 +36,7 @@
 
                 <select id="domain-select" onchange="changeDomain()" 
                         class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs font-medium text-gray-300 focus:outline-none focus:border-indigo-500 cursor-pointer transition">
-                    </select>
+                </select>
                 
                 <div class="flex rounded-lg bg-gray-900 border border-gray-700 overflow-hidden">
                     <input type="text" id="email-address" onclick="this.select()"
@@ -53,19 +51,37 @@
                         class="bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-800/40 disabled:text-indigo-400/60 text-white text-xs font-semibold px-4 py-2 rounded-lg transition cursor-pointer disabled:cursor-not-allowed">
                     New
                 </button>
+                
+                <button onclick="burnCurrentSession()" id="burn-btn" title="Burn Current Session"
+                        class="bg-gray-700 hover:bg-rose-950/40 hover:text-rose-400 hover:border-rose-900/50 border border-transparent p-2 rounded-lg transition cursor-pointer text-gray-400">
+                    🗑️
+                </button>
             </div>
+        </div>
+
+        <div class="w-full bg-gray-900/40 border border-dashed border-gray-700/60 rounded-xl p-2 flex items-center justify-center min-h-[90px]">
+            <span class="text-[10px] text-gray-600 font-mono tracking-wider uppercase">Sponsored Ad Zone</span>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-5 gap-6 min-h-[400px]">
             
-            <div class="md:col-span-2 flex flex-col gap-3">
-                <div class="flex justify-between items-center px-1">
-                    <h2 class="text-sm font-bold tracking-wider uppercase text-gray-400">Inbox Feed</h2>
-                    <span id="status-badge" class="text-[10px] bg-green-950/80 text-green-400 border border-green-900/50 px-2 py-0.5 rounded-full tracking-wide">Live Sync</span>
+            <div class="md:col-span-2 flex flex-col gap-4">
+                <div class="flex flex-col gap-3 flex-1">
+                    <div class="flex justify-between items-center px-1">
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-sm font-bold tracking-wider uppercase text-gray-400">Inbox Feed</h2>
+                            <button onclick="checkInboxManually()" title="Force Refresh Check" class="text-xs text-gray-500 hover:text-indigo-400 transition cursor-pointer">🔄</button>
+                        </div>
+                        <span id="status-badge" class="text-[10px] bg-green-950/80 text-green-400 border border-green-900/50 px-2 py-0.5 rounded-full tracking-wide">Live Sync</span>
+                    </div>
+                    
+                    <div id="inbox-container" class="space-y-2 flex-1 overflow-y-auto max-h-[300px] pr-1">
+                        <p class="text-gray-500 text-xs text-center py-24">No active session detected. Generate an email above to initialize monitoring logic.</p>
+                    </div>
                 </div>
-                
-                <div id="inbox-container" class="space-y-2 flex-1 overflow-y-auto max-h-[420px] pr-1">
-                    <p class="text-gray-500 text-xs text-center py-24">No active active session detected. Generate an email above to initialize monitoring logic.</p>
+
+                <div class="bg-gray-900/40 border border-dashed border-gray-700/60 rounded-xl p-2 flex items-center justify-center min-h-[200px]">
+                    <span class="text-[10px] text-gray-600 font-mono tracking-wider uppercase">Sponsored Ad Zone</span>
                 </div>
             </div>
 
@@ -114,36 +130,30 @@
     </footer>
 
     <script>
-        // Application Context State
         let currentEmail = "";
         let currentProvider = "guerrilla";
         let activeMailId = null;
         let pollInterval = null;
         
-        // Defensive Configuration Constants
-        const POLLING_DELAY = 15000; // Increased to 15 seconds to prevent backend rate-limiting blocks
-        const INACTIVITY_LIMIT = 10 * 60 * 1000; // 10 Minutes activity threshold before clean kill switch drop
+        const POLLING_DELAY = 15000; 
+        const INACTIVITY_LIMIT = 10 * 60 * 1000; 
         let lastActivityTime = Date.now();
 
-        // Sample domain mappings that your future backend will serve dynamically
         const providerDomains = {
             guerrilla: ['sharklasers.com', 'guerrillamail.com', 'grr.la'],
             mailtm: ['mailtm.com', 'tempid.tech', 'moakt.cc'],
             mailinator: ['mailinator.com', 'veryonpoint.com']
         };
 
-        // Initialize state configuration hooks
         window.onload = () => {
             changeProvider(); 
             setupInactivityTrackers();
         };
 
-        // Provider State Mutation
         function changeProvider() {
             currentProvider = document.getElementById('provider-select').value;
             const domainSelect = document.getElementById('domain-select');
             
-            // Rebuild Domain Dropdown based on active provider configuration
             domainSelect.innerHTML = "";
             providerDomains[currentProvider].forEach(domain => {
                 const opt = document.createElement('option');
@@ -152,7 +162,6 @@
                 domainSelect.appendChild(opt);
             });
 
-            // If an active session was already running, prompt user to synchronize explicitly
             if (currentEmail) {
                 document.getElementById('email-address').value = "Sync Required...";
             }
@@ -166,15 +175,12 @@
             document.getElementById('email-address').value = currentEmail;
         }
 
-        // Defensive Action: Throttled State Generator with Button Debounce
         async function generateNewEmail() {
             recordActivity();
-            
             const btn = document.getElementById('generate-btn');
             const addressInput = document.getElementById('email-address');
             const inbox = document.getElementById('inbox-container');
             
-            // Trigger UI Lockout / Prevent Hammering
             btn.disabled = true;
             btn.innerText = "Wait...";
             addressInput.value = "Generating Engine Data...";
@@ -185,32 +191,27 @@
 
             try {
                 const activeDomain = document.getElementById('domain-select').value;
-                
-                // --- BACKEND ROUTING REDIRECTION ---
-                // Notice: No proxy code lines remain. Frontend speaks directly to local relative server architecture routes.
                 const res = await fetch('/api/get-email', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ provider: currentProvider, domain: activeDomain })
                 });
                 
-                if (!res.ok) throw new Error("Backend node dropped connection packet.");
+                if (!res.ok) throw new Error("Backend node dropped packet.");
                 const data = await res.json();
                 
                 currentEmail = data.email;
                 addressInput.value = currentEmail;
                 
-                // Trigger Background Polling Engine at defensive 15-second intervals
                 updateSyncStatus("Live Sync", "bg-green-950/80 text-green-400 border-green-900/50 animate-pulse");
                 checkInbox();
                 pollInterval = setInterval(checkInbox, POLLING_DELAY);
                 
             } catch (err) {
-                console.error("Connection error to server core:", err);
+                console.error(err);
                 addressInput.value = "Server Core Offline";
                 inbox.innerHTML = '<p class="text-rose-400/80 text-xs text-center py-24">Failed to synchronize with local API. Ensure your backend server is up and listening.</p>';
             } finally {
-                // Enforce 3-second recovery debounce before resetting input click permissions
                 setTimeout(() => {
                     btn.disabled = false;
                     btn.innerText = "New";
@@ -218,13 +219,11 @@
             }
         }
 
-        // Check Inbox Loop Interface
         async function checkInbox() {
             if (Date.now() - lastActivityTime > INACTIVITY_LIMIT) {
                 triggerInactivityKillSwitch();
                 return;
             }
-
             if (!currentEmail) return;
 
             try {
@@ -237,7 +236,29 @@
             }
         }
 
-        // Render Inbox UI Iteration Logic
+        function checkInboxManually() {
+            recordActivity();
+            if (!currentEmail) return;
+            const badge = document.getElementById('status-badge');
+            updateSyncStatus("Checking...", "bg-indigo-950 text-indigo-400 border-indigo-900/50");
+            checkInbox().then(() => {
+                setTimeout(() => {
+                    updateSyncStatus("Live Sync", "bg-green-950/80 text-green-400 border-green-900/50 animate-pulse");
+                }, 1000);
+            });
+        }
+
+        function burnCurrentSession() {
+            recordActivity();
+            clearInterval(pollInterval);
+            currentEmail = "";
+            activeMailId = null;
+            document.getElementById('email-address').value = "Click New to Init...";
+            document.getElementById('inbox-container').innerHTML = '<p class="text-gray-500 text-xs text-center py-24">Session destroyed. Generate a fresh email identity above.</p>';
+            clearReadingPane();
+            updateSyncStatus("Idle", "bg-gray-950 text-gray-500 border-gray-800");
+        }
+
         function renderInboxItems(mails) {
             const container = document.getElementById('inbox-container');
             if (mails.length === 0) {
@@ -246,7 +267,6 @@
             }
 
             container.innerHTML = "";
-            // Keep UI tight by constraining viewing to a clean cap threshold
             mails.slice(0, 5).forEach(mail => {
                 const div = document.createElement('div');
                 div.className = `p-3 rounded-lg border text-left cursor-pointer transition flex flex-col gap-1 ${activeMailId === mail.id ? 'bg-indigo-950/40 border-indigo-500/50' : 'bg-gray-900/60 border-gray-700/50 hover:border-gray-600'}`;
@@ -263,7 +283,6 @@
             });
         }
 
-        // Load Email Reader Context View
         async function loadEmailContent(mailId) {
             recordActivity();
             activeMailId = mailId;
@@ -285,9 +304,8 @@
                 
                 document.getElementById('view-subject').innerText = data.subject;
                 document.getElementById('view-from').innerText = `From: ${data.from}`;
-                document.getElementById('view-body').innerHTML = data.body; // Serves sanitised markup strings from backend safely
+                document.getElementById('view-body').innerHTML = data.body;
                 
-                // Re-render feed elements briefly to adjust border focus assignments nicely
                 checkInbox();
             } catch (err) {
                 placeholder.className = "flex flex-col items-center justify-center text-center h-full text-rose-400 py-24";
@@ -295,11 +313,7 @@
             }
         }
 
-        // Defensive Mechanism: 10-Minute Activity Tracking Architecture
-        function recordActivity() {
-            lastActivityTime = Date.now();
-        }
-
+        function recordActivity() { lastActivityTime = Date.now(); }
         function setupInactivityTrackers() {
             ['click', 'mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(evt => {
                 document.addEventListener(evt, recordActivity, { passive: true });
@@ -312,9 +326,9 @@
             
             const container = document.getElementById('inbox-container');
             container.innerHTML = `
-                <div class="text-center py-16 px-4 flex flex-col items-center gap-2">
+                <div class="text-center py-12 px-4 flex flex-col items-center gap-2">
                     <p class="text-amber-400/80 text-xs font-medium">Session Suspended due to Inactivity</p>
-                    <p class="text-gray-500 text-[11px] max-w-[200px] leading-normal">To preserve database pipeline connections, automatic listening loops were dropped. Click refresh below to resume live tracking state.</p>
+                    <p class="text-gray-500 text-[11px] max-w-[200px] leading-normal">Automatic tracking loops dropped. Click below to resume monitoring.</p>
                     <button onclick="resumeSyncCycle()" class="mt-2 bg-gray-700 hover:bg-gray-600 text-gray-200 font-semibold text-[10px] px-3 py-1.5 rounded-md transition cursor-pointer">Resume Sync</button>
                 </div>
             `;
@@ -323,7 +337,6 @@
         function resumeSyncCycle() {
             recordActivity();
             if (!currentEmail) return;
-            
             updateSyncStatus("Live Sync", "bg-green-950/80 text-green-400 border-green-900/50 animate-pulse");
             checkInbox();
             pollInterval = setInterval(checkInbox, POLLING_DELAY);
@@ -335,7 +348,6 @@
             badge.className = `text-[10px] px-2 py-0.5 rounded-full tracking-wide border ${classes}`;
         }
 
-        // Utility Helper Implementations
         function copyToClipboard() {
             recordActivity();
             const copyText = document.getElementById("email-address").value;
