@@ -1,248 +1,398 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QuickBurner - Temp Email Generator</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Temp Email ID - Fast & Free Disposable Mail Generator</title>
+    <meta
+      name="description"
+      content="Get anonymous temporary email addresses to bypass verification screens and block spam instantly. Create yours in 1 click!"
+    />
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
-        .custom-cursor:focus { caret-color: #818cf8; }
+      .custom-cursor:focus {
+        caret-color: #818cf8;
+      }
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #111827;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #374151;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #4b5563;
+      }
     </style>
-</head>
-<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
-
-    <div class="w-full max-w-5xl bg-gray-800 rounded-xl shadow-2xl p-6 border border-gray-700 flex flex-col gap-6">
-        
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-700 pb-4">
-            <div>
-                <h1 class="text-2xl font-bold text-indigo-400">🔥 QuickBurner</h1>
-                <p class="text-gray-400 text-xs mt-0.5">Minimalist disposable email engine.</p>
-            </div>
-            
-            <div class="flex flex-wrap items-center gap-2">
-                <select id="provider-select" onchange="updateDomainDropdown()" 
-                        class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs font-medium text-indigo-300 focus:outline-none focus:border-indigo-500 cursor-pointer">
-                    <option value="guerrilla">Guerrilla Mail Engine</option>
-                    <option value="mailtm">1SecMail Node A</option>
-                    <option value="mailinator">1SecMail Node B</option>
-                </select>
-
-                <select id="domain-select" onchange="triggerEmailProvisioning(false)" 
-                        class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs font-medium text-indigo-300 focus:outline-none focus:border-indigo-500 cursor-pointer">
-                </select>
-                
-                <div class="flex rounded-lg bg-gray-900 border border-gray-700 overflow-hidden">
-                    <input type="text" id="email-address" oninput="this.value = currentEmail" onclick="this.select()"
-                           class="bg-transparent px-3 py-2 text-sm font-mono text-indigo-300 focus:outline-none w-48 sm:w-64 text-center custom-cursor" value="Generating..." readonly>
-                    <button onclick="copyToClipboard()" id="copy-btn" class="bg-gray-700 hover:bg-gray-600 px-3 text-xs font-semibold tracking-wide transition cursor-pointer border-l border-gray-700">Copy</button>
-                </div>
-
-                <button onclick="triggerEmailProvisioning(true)" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition cursor-pointer">New</button>
-            </div>
+  </head>
+  <body
+    class="bg-gray-900 text-gray-100 min-h-screen flex flex-col items-center p-4 py-8 sm:py-12 selection:bg-indigo-500/30"
+  >
+    <div
+      class="w-full max-w-5xl bg-gray-800 rounded-xl shadow-2xl p-6 border border-gray-700 flex flex-col gap-6"
+    >
+      <div
+        class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-700 pb-4"
+      >
+        <div>
+          <h1 class="text-2xl font-black text-indigo-400 tracking-tight flex items-center gap-2">
+            <span>⚡</span> TempEmail<span class="text-gray-400 font-light">ID</span>
+          </h1>
+          <p class="text-gray-400 text-xs mt-0.5">
+            High-speed disposable mail matrix. Secure. Anonymous. Automatic.
+          </p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-6 min-h-[400px]">
-            
-            <div class="md:col-span-2 flex flex-col gap-3">
-                <div class="flex justify-between items-center px-1">
-                    <h2 class="text-sm font-bold tracking-wider uppercase text-gray-400">Inbox (Max 5)</h2>
-                    <span id="status" class="text-[10px] bg-green-950/80 text-green-400 border border-green-900/50 px-2 py-0.5 rounded-full animate-pulse">Live</span>
-                </div>
-                
-                <div id="inbox-container" class="space-y-2 flex-1 overflow-y-auto">
-                    <p class="text-gray-500 text-xs text-center py-12">Listening for incoming verification links...</p>
-                </div>
-            </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <select
+            id="provider-select"
+            onchange="updateDomainDropdown()"
+            class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs font-medium text-indigo-300 focus:outline-none focus:border-indigo-500 cursor-pointer shadow-sm transition"
+          >
+            <option value="guerrilla">Guerrilla Mail Engine</option>
+            <option value="mailtm">1SecMail Node A</option>
+            <option value="mailinator">1SecMail Node B</option>
+          </select>
 
-            <div class="md:col-span-3 bg-gray-900/40 border border-gray-700/70 rounded-xl p-5 flex flex-col" id="reading-pane">
-                <div class="flex flex-col items-center justify-center text-center h-full text-gray-500 py-12" id="pane-placeholder">
-                    <span class="text-3xl mb-2">✉️</span>
-                    <p class="text-xs">Select an email from the left feed to inspect content details directly inside this view window.</p>
-                </div>
-                
-                <div id="pane-content" class="hidden flex-col h-full">
-                    <div class="border-b border-gray-700 pb-3 mb-4">
-                        <h3 id="view-subject" class="text-lg font-bold text-indigo-300 mb-1">...</h3>
-                        <p id="view-from" class="text-xs text-gray-400">...</p>
-                    </div>
-                    <div id="view-body" class="flex-1 text-xs text-gray-300 overflow-y-auto pr-1 leading-relaxed"></div>
-                </div>
-            </div>
+          <select
+            id="domain-select"
+            onchange="triggerEmailProvisioning(false)"
+            class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs font-medium text-indigo-300 focus:outline-none focus:border-indigo-500 cursor-pointer shadow-sm transition"
+          >
+            </select>
 
+          <div class="flex rounded-lg bg-gray-900 border border-gray-700 overflow-hidden shadow-inner">
+            <input
+              type="text"
+              id="email-address"
+              onclick="this.select()"
+              class="bg-transparent px-3 py-2 text-sm font-mono text-indigo-300 focus:outline-none w-48 sm:w-64 text-center custom-cursor"
+              value="Generating..."
+              readonly
+            />
+            <button
+              id="copy-btn"
+              onclick="copyToClipboard()"
+              class="bg-gray-700 hover:bg-gray-600 px-4 text-xs font-semibold tracking-wide transition cursor-pointer border-l border-gray-700 active:scale-95"
+            >
+              Copy
+            </button>
+          </div>
+
+          <button
+            onclick="triggerEmailProvisioning(true)"
+            class="bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-4 py-2 rounded-lg transition cursor-pointer flex items-center gap-1 shadow-md active:scale-95"
+          >
+            <span>🗑️</span> Burn Session
+          </button>
         </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-6 min-h-[380px]">
+        <div class="md:col-span-2 flex flex-col gap-3">
+          <div class="flex justify-between items-center px-1">
+            <h2 class="text-xs font-bold tracking-wider uppercase text-gray-400">
+              Inbound Stream
+            </h2>
+            <span
+              id="status-badge"
+              class="text-[10px] px-2 py-0.5 rounded-full tracking-wide border bg-green-950/80 text-green-400 border-green-900/50 animate-pulse"
+            >
+              Live Sync
+            </span>
+          </div>
+
+          <div id="inbox-container" class="space-y-2 flex-1 overflow-y-auto max-h-[380px] pr-1">
+            <p class="text-gray-500 text-xs text-center py-16 font-medium">
+              Waiting for incoming verification payloads...
+            </p>
+          </div>
+        </div>
+
+        <div
+          id="reading-pane"
+          class="md:col-span-3 bg-gray-900/40 border border-gray-700/70 rounded-xl p-5 flex flex-col backdrop-blur-sm min-h-[300px]"
+        >
+          <div
+            id="pane-placeholder"
+            class="flex flex-col items-center justify-center text-center h-full text-gray-500 py-16"
+          >
+            <span class="text-3xl mb-2">✉️</span>
+            <p class="text-xs max-w-xs">
+              Select an incoming validation parcel from the feed to inspect message layers directly inside this view window.
+            </p>
+          </div>
+
+          <div id="pane-content" class="hidden flex-col h-full">
+            <div class="border-b border-gray-700 pb-3 mb-4 flex flex-col gap-1">
+              <h3 id="view-subject" class="text-base font-bold text-indigo-300 leading-snug">
+                ...
+              </h3>
+              <div class="flex justify-between items-center text-[11px] text-gray-400">
+                <span id="view-from" class="truncate max-w-[250px] font-medium">...</span>
+                <span id="view-time" class="shrink-0 font-mono">...</span>
+              </div>
+            </div>
+            <div
+              id="view-body"
+              class="flex-1 text-xs text-gray-300 overflow-y-auto pr-1 leading-relaxed"
+            ></div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="w-full bg-gray-900/30 border border-gray-700/50 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left"
+      >
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-indigo-500/10 rounded-lg text-indigo-400 text-lg shrink-0">🛡️</div>
+          <div>
+            <h4 class="text-xs font-bold text-gray-200">Tired of permanent spam chains?</h4>
+            <p class="text-[11px] text-gray-400">
+              Bookmark TempEmailID to generate fresh data nodes anytime you run into verification gates.
+            </p>
+          </div>
+        </div>
+        <div class="text-[10px] uppercase font-bold tracking-widest text-gray-500 border border-gray-700 px-3 py-1.5 rounded-md bg-gray-900/50">
+          Advertisement Space
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 border-t border-gray-700/60 pt-6">
+        <div class="bg-gray-900/20 border border-gray-700/40 rounded-lg p-3 text-center">
+          <div class="text-xs text-gray-400 font-medium mb-0.5">Network Node</div>
+          <div class="text-sm font-mono font-bold text-indigo-300">Active HTTP/2</div>
+        </div>
+        <div class="bg-gray-900/20 border border-gray-700/40 rounded-lg p-3 text-center">
+          <div class="text-xs text-gray-400 font-medium mb-0.5">Payload Encryption</div>
+          <div class="text-sm font-mono font-bold text-emerald-400">SSL Secured</div>
+        </div>
+        <div class="bg-gray-900/20 border border-gray-700/40 rounded-lg p-3 text-center">
+          <div class="text-xs text-gray-400 font-medium mb-0.5">Session Logic</div>
+          <div class="text-sm font-mono font-bold text-amber-400">Volatile RAM</div>
+        </div>
+        <div class="bg-gray-900/20 border border-gray-700/40 rounded-lg p-3 text-center">
+          <div class="text-xs text-gray-400 font-medium mb-0.5">Total System Delay</div>
+          <div class="text-sm font-mono font-bold text-rose-400">&lt; 350ms</div>
+        </div>
+      </div>
+
+      <div class="border-t border-gray-700/60 pt-6 flex flex-col gap-4">
+        <h3 class="text-sm font-bold tracking-wider uppercase text-gray-400 px-1">
+          Frequently Asked Questions
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-gray-900/30 border border-gray-700/40 rounded-xl p-4 flex flex-col gap-1.5">
+            <h4 class="text-xs font-bold text-indigo-300">What is a disposable temporary email ID?</h4>
+            <p class="text-[11px] text-gray-400 leading-relaxed">
+              It is a short-lived mailbox configuration designed to accept messages temporarily. It lets you pass forced signup pages without exposing your identity or personal email address to track networks.
+            </p>
+          </div>
+          <div class="bg-gray-900/30 border border-gray-700/40 rounded-xl p-4 flex flex-col gap-1.5">
+            <h4 class="text-xs font-bold text-indigo-300">How do I trigger the Burn Session function?</h4>
+            <p class="text-[11px] text-gray-400 leading-relaxed">
+              Simply hit the red <span class="text-red-400 font-semibold">Burn Session</span> button at the top right. This forces our backend to instantly trash your active IP routing session context and pull down an entirely clean profile.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script>
-        const BACKEND_URL = "http://127.0.0.1:8000";
-        let currentEmail = "";
-        let sid = ""; 
-        let pollInterval;
-        let activeMailId = null;
+      const BACKEND_URL = "http://127.0.0.1:8000";
+      let currentEmail = "";
+      let sid = "";
+      let pollInterval = null;
+      let activeMailId = null;
 
-        // Dynamic domain mapping configuration matrices
-        const providerDomains = {
-            guerrilla: [
-                "sharklasers.com", "guerrillamail.com", "guerrillamailblock.com",
-                "guerrillamail.net", "guerrillamail.org", "guerrillamail.biz",
-                "grr.la", "pokemail.net"
-            ],
-            mailtm: ["1secmail.com", "1secmail.org", "1secmail.net"],
-            mailinator: ["1secmail.com", "1secmail.org", "1secmail.net"]
-        };
+      // Restored exact custom multi-domain allocation
+      const providerDomains = {
+        guerrilla: [
+          "sharklasers.com", "guerrillamail.com", "guerrillamailblock.com",
+          "guerrillamail.net", "guerrillamail.org", "guerrillamail.biz",
+          "grr.la", "pokemail.net"
+        ],
+        mailtm: ["1secmail.com", "1secmail.org", "1secmail.net"],
+        mailinator: ["1secmail.com", "1secmail.org", "1secmail.net"]
+      };
 
-        function updateDomainDropdown() {
-            const provider = document.getElementById('provider-select').value;
-            const dropdown = document.getElementById('domain-select');
-            dropdown.innerHTML = "";
-            
-            providerDomains[provider].forEach(domain => {
-                const option = document.createElement('option');
-                option.value = domain;
-                option.innerText = `@${domain}`;
-                dropdown.appendChild(option);
-            });
-            triggerEmailProvisioning(false);
+      function updateDomainDropdown() {
+        const provider = document.getElementById("provider-select").value;
+        const dropdown = document.getElementById("domain-select");
+        dropdown.innerHTML = "";
+
+        providerDomains[provider].forEach((domain) => {
+          const option = document.createElement("option");
+          option.value = domain;
+          option.innerText = `@${domain}`;
+          dropdown.appendChild(option);
+        });
+        triggerEmailProvisioning(false);
+      }
+
+      async function triggerEmailProvisioning(forceNew = false) {
+        clearInterval(pollInterval);
+        clearReadingPane();
+
+        document.getElementById("email-address").value = "Generating...";
+        document.getElementById("inbox-container").innerHTML = `
+          <p class="text-gray-500 text-xs text-center py-16 font-medium">
+            Waiting for incoming verification payloads...
+          </p>`;
+
+        const selectedProvider = document.getElementById("provider-select").value;
+        const selectedDomain = document.getElementById("domain-select").value;
+
+        updateSyncStatus("Syncing...", "bg-amber-950/80 text-amber-400 border-amber-900/50");
+
+        try {
+          const res = await fetch(`${BACKEND_URL}/api/get-email`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              provider: selectedProvider,
+              domain: selectedDomain,
+              force_new: forceNew
+            })
+          });
+
+          if (!res.ok) throw new Error();
+          const data = await res.json();
+
+          sid = data.sid;
+          currentEmail = data.email;
+          document.getElementById("email-address").value = currentEmail;
+
+          updateSyncStatus("Live Sync", "bg-green-950/80 text-green-400 border-green-900/50 animate-pulse");
+
+          // Run checking arrays
+          checkInbox();
+          pollInterval = setInterval(checkInbox, 5000);
+        } catch (err) {
+          document.getElementById("email-address").value = "Offline Node Fault";
+          updateSyncStatus("Error", "bg-red-950/80 text-red-400 border-red-900/50");
         }
+      }
 
-        async function triggerEmailProvisioning(forceNew = false) {
-            clearInterval(pollInterval);
-            resetCopyButton();
-            clearReadingPane();
-            
-            document.getElementById('email-address').value = "Generating...";
-            document.getElementById('inbox-container').innerHTML = '<p class="text-gray-500 text-xs text-center py-12">Listening for incoming verification links...</p>';
-            
-            const selectedProvider = document.getElementById('provider-select').value;
-            const selectedDomain = document.getElementById('domain-select').value;
+      async function checkInbox() {
+        if (!sid || !currentEmail) return;
+        const provider = document.getElementById("provider-select").value;
 
-            try {
-                // Post configurations out to your FastAPI endpoint node directly
-                const res = await fetch(`${BACKEND_URL}/api/get-email`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        provider: selectedProvider,
-                        domain: selectedDomain,
-                        force_new: forceNew
-                    })
-                });
-                
-                if (!res.ok) throw new Error("Backend connection fault.");
-                const data = await res.json();
-                
-                sid = data.sid;
-                currentEmail = data.email;
-                document.getElementById('email-address').value = currentEmail;
-                
-                // Fire synchronization worker loops immediately
-                checkInbox();
-                pollInterval = setInterval(checkInbox, 5000);
-            } catch (err) {
-                document.getElementById('email-address').value = "Backend Sync Error.";
-                console.error(err);
-            }
+        try {
+          const res = await fetch(
+            `${BACKEND_URL}/api/check-inbox?email=${encodeURIComponent(currentEmail)}&provider=${provider}&sid=${sid}`
+          );
+          if (!res.ok) return;
+
+          const data = await res.json();
+          const messages = (data.mails || []).slice(0, 5);
+          const container = document.getElementById("inbox-container");
+
+          if (messages.length === 0) {
+            container.innerHTML = `
+              <p class="text-gray-500 text-xs text-center py-16 font-medium">
+                Waiting for incoming verification payloads...
+              </p>`;
+            return;
+          }
+
+          container.innerHTML = "";
+          messages.forEach((msg) => {
+            const isSelected = activeMailId === msg.id;
+            const item = document.createElement("div");
+            item.className = `p-3 rounded-lg border text-left transition cursor-pointer ${
+              isSelected
+                ? "bg-indigo-950/40 border-indigo-500/80 text-indigo-200"
+                : "bg-gray-900 border-gray-700/60 hover:border-gray-500"
+            }`;
+
+            item.innerHTML = `
+              <div class="flex justify-between text-[10px] text-gray-400 mb-0.5">
+                <span class="truncate font-semibold text-indigo-400 max-w-[130px]">${msg.from}</span>
+                <span>${msg.time}</span>
+              </div>
+              <div class="text-xs font-semibold truncate text-gray-200">${msg.subject || "(No Subject)"}</div>
+            `;
+            item.onclick = () => selectEmail(msg.id, item);
+            container.appendChild(item);
+          });
+        } catch (err) {
+          console.error(err);
         }
+      }
 
-        async function checkInbox() {
-            if (!sid || !currentEmail) return;
-            const provider = document.getElementById('provider-select').value;
-            
-            try {
-                const res = await fetch(`${BACKEND_URL}/api/check-inbox?email=${encodeURIComponent(currentEmail)}&provider=${provider}&sid=${sid}`);
-                if (!res.ok) return;
-                
-                const data = await res.json();
-                const messages = (data.mails || []).slice(0, 5);
-                const container = document.getElementById('inbox-container');
-                
-                if (messages.length === 0) {
-                    container.innerHTML = '<p class="text-gray-500 text-xs text-center py-12">Listening for incoming verification links...</p>';
-                    return;
-                }
-                
-                container.innerHTML = ""; 
-                messages.forEach(msg => {
-                    const isSelected = activeMailId === msg.id;
-                    const item = document.createElement('div');
-                    item.className = `p-3 rounded-lg border text-left transition cursor-pointer ${
-                        isSelected 
-                        ? 'bg-indigo-950/40 border-indigo-500/80 text-indigo-200' 
-                        : 'bg-gray-900 border-gray-700/60 hover:border-gray-500'
-                    }`;
-                    
-                    item.innerHTML = `
-                        <div class="flex justify-between text-[10px] text-gray-400 mb-0.5">
-                            <span class="truncate font-semibold text-indigo-400 max-w-[120px]">${msg.from}</span>
-                            <span>${msg.time}</span>
-                        </div>
-                        <div class="text-xs font-semibold truncate text-gray-200">${msg.subject || '(No Subject)'}</div>
-                    `;
-                    item.onclick = () => selectEmail(msg.id, item);
-                    container.appendChild(item);
-                });
-            } catch (err) {
-                console.error(err);
-            }
+      async function selectEmail(mailId, elementNode) {
+        activeMailId = mailId;
+        const provider = document.getElementById("provider-select").value;
+
+        document.querySelectorAll("#inbox-container > div").forEach((node) => {
+          node.className =
+            "p-3 rounded-lg border text-left transition cursor-pointer bg-gray-900 border-gray-700/60 hover:border-gray-500";
+        });
+        elementNode.className =
+          "p-3 rounded-lg border text-left transition cursor-pointer bg-indigo-950/40 border-indigo-500/80 text-indigo-200";
+
+        const panePlaceholder = document.getElementById("pane-placeholder");
+        const paneContent = document.getElementById("pane-content");
+        const vSubject = document.getElementById("view-subject");
+        const vFrom = document.getElementById("view-from");
+        const vBody = document.getElementById("view-body");
+
+        panePlaceholder.classList.add("hidden");
+        paneContent.classList.remove("hidden");
+        vSubject.innerText = "Loading message parameters...";
+        vFrom.innerText = "";
+        vBody.innerHTML =
+          '<div class="text-center py-12 text-gray-500 animate-pulse text-xs font-medium">Extracting MIME body fields...</div>';
+
+        try {
+          const res = await fetch(
+            `${BACKEND_URL}/api/get-mail-body?id=${mailId}&provider=${provider}&sid=${sid}`
+          );
+          if (!res.ok) throw new Error();
+          const data = await res.json();
+
+          vSubject.innerText = data.subject || "(No Subject)";
+          vFrom.innerText = `From: ${data.from}`;
+          vBody.innerHTML = data.body;
+        } catch (err) {
+          vBody.innerHTML = `<p class="text-red-400 text-xs text-center py-4">Failed to map content data safely.</p>`;
         }
+      }
 
-        async function selectEmail(mailId, elementNode) {
-            activeMailId = mailId;
-            const provider = document.getElementById('provider-select').value;
-            
-            document.querySelectorAll('#inbox-container > div').forEach(node => {
-                node.className = "p-3 rounded-lg border text-left transition cursor-pointer bg-gray-900 border-gray-700/60 hover:border-gray-500";
-            });
-            elementNode.className = "p-3 rounded-lg border text-left transition cursor-pointer bg-indigo-950/40 border-indigo-500/80 text-indigo-200";
-
-            const panePlaceholder = document.getElementById('pane-placeholder');
-            const paneContent = document.getElementById('pane-content');
-            const vSubject = document.getElementById('view-subject');
-            const vFrom = document.getElementById('view-from');
-            const vBody = document.getElementById('view-body');
-
-            panePlaceholder.classList.add('hidden');
-            paneContent.classList.remove('hidden');
-            vSubject.innerText = "Loading message body...";
-            vFrom.innerText = "";
-            vBody.innerHTML = '<div class="text-center py-8 text-gray-500 animate-pulse text-xs">Querying data packets...</div>';
-
-            try {
-                const res = await fetch(`${BACKEND_URL}/api/get-mail-body?id=${mailId}&provider=${provider}&sid=${sid}`);
-                if (!res.ok) throw new Error();
-                const data = await res.json();
-                
-                vSubject.innerText = data.subject || "(No Subject)";
-                vFrom.innerText = `From: ${data.from} | ID: ${data.id}`;
-                vBody.innerHTML = data.body;
-            } catch (err) {
-                vBody.innerText = "Failed loading transaction streaming message layer.";
-            }
+      function updateSyncStatus(text, classes) {
+        const badge = document.getElementById("status-badge");
+        if (badge) {
+          badge.innerText = text;
+          badge.className = `text-[10px] px-2 py-0.5 rounded-full tracking-wide border ${classes}`;
         }
+      }
 
-        function clearReadingPane() {
-            activeMailId = null;
-            document.getElementById('pane-placeholder').classList.remove('hidden');
-            document.getElementById('pane-content').classList.add('hidden');
+      function clearReadingPane() {
+        activeMailId = null;
+        document.getElementById("pane-placeholder").classList.remove("hidden");
+        document.getElementById("pane-content").classList.add("hidden");
+      }
+
+      function copyToClipboard() {
+        if (currentEmail && currentEmail !== "Generating...") {
+          navigator.clipboard.writeText(currentEmail);
+          const copyBtn = document.getElementById("copy-btn");
+          copyBtn.innerText = "Copied!";
+          copyBtn.className =
+            "bg-green-600 px-4 text-xs font-semibold tracking-wide transition cursor-pointer border-l border-green-600 text-white";
+          setTimeout(() => {
+            copyBtn.innerText = "Copy";
+            copyBtn.className =
+              "bg-gray-700 hover:bg-gray-600 px-4 text-xs font-semibold tracking-wide transition cursor-pointer border-l border-gray-700";
+          }, 2000);
         }
+      }
 
-        function copyToClipboard() {
-            if (currentEmail && currentEmail !== "Generating...") {
-                navigator.clipboard.writeText(currentEmail);
-                const copyBtn = document.getElementById('copy-btn');
-                copyBtn.innerText = "Copied!";
-                copyBtn.className = "bg-green-600 px-3 text-xs font-semibold tracking-wide transition cursor-pointer border-l border-green-600 text-white";
-            }
-        }
-
-        function resetCopyButton() {
-            const copyBtn = document.getElementById('copy-btn');
-            if(copyBtn) {
-                copyBtn.innerText = "Copy";
-                copyBtn.className = "bg-gray-700 hover:bg-gray-600 px-3 text-xs font-semibold tracking-wide transition cursor-pointer border-l border-gray-700";
-            }
-        }
-
-        window.onload = updateDomainDropdown;
+      window.onload = updateDomainDropdown;
     </script>
-</body>
+  </body>
 </html>
