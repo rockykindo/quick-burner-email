@@ -1,16 +1,14 @@
-import os
-import random
-import string
-from pathlib import Path
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
 from pydantic import BaseModel
+from pathlib import Path
+import random
+import string
 
 app = FastAPI(title="Temp Email ID Backend Node")
 
-# Enable Cross-Origin Resource Sharing (CORS) for local environment testing
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -19,24 +17,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Instantiate a single high-speed asynchronous network client session with a relaxed timeout
-async_client = httpx.AsyncClient(timeout=15.0)
+async_client = httpx.AsyncClient(timeout=12.0)
 GUERRILLA_BASE = "https://api.guerrillamail.com/ajax.php"
-MAILTM_BASE = "https://api.mail.tm"
+SECMAIL_BASE = "https://www.1secmail.com/api/v1/"
 
 def generate_random_sid_token(length=12):
-    """Generates a random alphanumeric seed to forcefully bypass Guerrilla's IP lock."""
+    """Generates an alphanumeric seed to forcefully bypass Guerrilla's IP cache lock."""
     letters_and_digits = string.ascii_lowercase + string.digits
     return ''.join(random.choice(letters_and_digits) for _ in range(length))
 
-def generate_secure_password(length=14):
-    """Generates a random password conforming to Mail.tm validation rules."""
-    chars = string.ascii_letters + string.digits
-    return ''.join(random.choice(chars) for _ in range(length))
-
 @app.get("/")
 async def serve_frontend():
-    """Serves the main single-page dashboard app canvas directly."""
     frontend_path = Path("index.html")
     if not frontend_path.exists():
         raise HTTPException(status_code=404, detail="Frontend layout template missing.")
@@ -45,19 +36,14 @@ async def serve_frontend():
 class EmailRequest(BaseModel):
     provider: str
     domain: str
-    force_new: bool = False  # Handles the Session Burner protocol tracking flag
 
 @app.post("/api/get-email")
 async def get_email_address(payload: EmailRequest):
-    """
-    Initializes a synchronized mailbox instance across alternative live providers.
-    """
     if payload.provider == "guerrilla":
         try:
             url = f"{GUERRILLA_BASE}?f=get_email_address&lang=en"
-            if payload.force_new:
-                random_token = generate_random_sid_token()
-                url += f"&sid_token={random_token}"
+            # Set the explicit domain choice selected by the user
+            url += f"&domain={payload.domain}"
             
             response = await async_client.get(url)
             if response.status_code != 200:
@@ -71,62 +57,22 @@ async def get_email_address(payload: EmailRequest):
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
             
-    elif payload.provider == "mailtm":
+    elif payload.provider in ["mailtm", "mailinator"]:
         try:
-            # Generate account parameters on the fly
+            # Drop-in fallback using 1SecMail API layout matrix
             random_user = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
             full_email = f"{random_user}@{payload.domain}"
-            secure_pass = generate_secure_password()
-            
-            # Request explicit account creation on Mail.tm remote gateway cluster
-            account_res = await async_client.post(
-                f"{MAILTM_BASE}/accounts",
-                json={"address": full_email, "password": secure_pass},
-                headers={"Accept": "application/json", "Content-Type": "application/json"}
-            )
-            
-            if account_res.status_code not in [200, 201]:
-                raise HTTPException(status_code=502, detail="Mail.tm gateway rejected registration parameters.")
-            
-            # Immediately request an active operational JWT Bearer context token
-            token_res = await async_client.post(
-                f"{MAILTM_BASE}/token",
-                json={"address": full_email, "password": secure_pass},
-                headers={"Accept": "application/json", "Content-Type": "application/json"}
-            )
-            
-            if token_res.status_code != 200:
-                raise HTTPException(status_code=502, detail="Mail.tm authentication subsystem handshake failed.")
-                
-            token_data = token_res.json()
-            jwt_token = token_data.get("token")
-            
             return {
                 "email": full_email,
-                "sid": f"jwt_{jwt_token}"
-            }
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Mail.tm Node Exception: {str(e)}")
-        
-    elif payload.provider == "mailinator":
-        try:
-            # Standardizes down to direct open sandbox allocation under primary public domain routing
-            random_id = ''.join(random.choices(string.ascii_lowercase + string.digits, k=7))
-            target_domain = "mailinator.com"  # Bypass non-routable secondary domain hooks permanently
-            full_email = f"{random_id}@{target_domain}"
-            return {
-                "email": full_email,
-                "sid": f"mali_{random_id}"
+                "sid": f"sec_{random_user}"
             }
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
-        
     else:
         raise HTTPException(status_code=400, detail="Engine configuration not supported.")
 
 @app.get("/api/check-inbox")
 async def check_inbox(email: str = Query(...), provider: str = Query(...), sid: str = Query(None)):
-    """Fetches and normalizes live incoming data array streams from selected provider."""
     if provider == "guerrilla":
         try:
             url = f"{GUERRILLA_BASE}?f=check_email&seq=0"
@@ -152,44 +98,35 @@ async def check_inbox(email: str = Query(...), provider: str = Query(...), sid: 
         except Exception:
             return {"mails": []}
             
-    elif provider == "mailtm":
-        if not sid or not sid.startswith("jwt_"):
+    elif provider in ["mailtm", "mailinator"]:
+        if not sid or not sid.startswith("sec_"):
             return {"mails": []}
         try:
-            jwt = sid.replace("jwt_", "")
-            headers = {
-                "Authorization": f"Bearer {jwt}",
-                "Accept": "application/json"
-            }
-            response = await async_client.get(f"{MAILTM_BASE}/messages", headers=headers)
+            username = sid.replace("sec_", "")
+            domain = email.split("@")[1]
             
+            url = f"{SECMAIL_BASE}?action=getMessages&login={username}&domain={domain}"
+            response = await async_client.get(url)
             if response.status_code != 200:
                 return {"mails": []}
                 
-            raw_data = response.json()
-            raw_list = raw_data.get("hydra:member", [])
-            
+            raw_list = response.json()
             formatted_mails = []
             for m in raw_list:
                 formatted_mails.append({
-                    "id": m.get("id"),
-                    "from": m.get("from", {}).get("address", "System Sender"),
-                    "subject": m.get("subject", "No Subject Spec"),
-                    "time": m.get("createdAt", "")[11:19]  # Clean Timestamp parsing layout slice
+                    "id": str(m.get("id")),
+                    "from": m.get("from", "Unknown Sender"),
+                    "subject": m.get("subject", "No Subject"),
+                    "time": m.get("date", "")[11:19]
                 })
             return {"mails": formatted_mails}
         except Exception:
             return {"mails": []}
 
-    elif provider == "mailinator":
-        # Mailinator Public fallback feed layout normalization route context
-        return {"mails": []}
-
     return {"mails": []}
 
 @app.get("/api/get-mail-body")
 async def get_mail_body(id: str = Query(...), provider: str = Query(...), sid: str = Query(None)):
-    """Extracts raw content layout bodies safely for rendering within sandboxed view pane."""
     if provider == "guerrilla":
         try:
             url = f"{GUERRILLA_BASE}?f=fetch_email&email_id={id}"
@@ -210,33 +147,30 @@ async def get_mail_body(id: str = Query(...), provider: str = Query(...), sid: s
         except Exception:
             raise HTTPException(status_code=500, detail="Failed to parse remote payload structure.")
 
-    elif provider == "mailtm":
-        if not sid or not sid.startswith("jwt_"):
+    elif provider in ["mailtm", "mailinator"]:
+        if not sid or not sid.startswith("sec_"):
             raise HTTPException(status_code=401, detail="Authentication signature missing.")
         try:
-            jwt = sid.replace("jwt_", "")
-            headers = {
-                "Authorization": f"Bearer {jwt}",
-                "Accept": "application/json"
-            }
-            response = await async_client.get(f"{MAILTM_BASE}/messages/{id}", headers=headers)
-            
-            if response.status_code != 200:
-                raise HTTPException(status_code=502, detail="Unable to retrieve Mail.tm message stream.")
-                
-            data = response.json()
-            return {
-                "id": data.get("id"),
-                "from": data.get("from", {}).get("address"),
-                "subject": data.get("subject"),
-                "body": data.get("html") or f"<pre style='color: #d1d5db;'>{data.get('text')}</pre>"
-            }
-        except Exception:
-            raise HTTPException(status_code=500, detail="Failed to pull engine message layers.")
+            username = sid.replace("sec_", "")
+            # Locate active fallback tracking domain parameters safely out of internal tracking strings
+            # Look up standard 1SecMail extraction arrays dynamically
+            for domain_ext in ["1secmail.com", "1secmail.org", "1secmail.net"]:
+                url = f"{SECMAIL_BASE}?action=readMessage&login={username}&domain={domain_ext}&id={id}"
+                response = await async_client.get(url)
+                if response.status_code == 200 and "id" in response.text:
+                    data = response.json()
+                    return {
+                        "id": str(data.get("id")),
+                        "from": data.get("from"),
+                        "subject": data.get("subject"),
+                        "body": data.get("htmlBody") or f"<pre style='color: #d1d5db;'>{data.get('textBody')}</pre>"
+                    }
+            raise HTTPException(status_code=404, detail="Message element dropped on target node arrays.")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
-    return {"body": "<p>Content parsing omitted or restricted for selected sandbox providers.</p>"}
+    return {"body": "<p>Content parsing omitted for alternative sandbox providers.</p>"}
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    """Closes networking connection cycles cleanly on application shutdown."""
     await async_client.aclose()
