@@ -9,6 +9,31 @@ import string
 
 app = FastAPI(title="Temp Email ID Backend Node")
 
+# Add this middleware BEFORE other middleware
+@app.middleware("http")
+async def add_csp_header(request, call_next):
+    response = await call_next(request)
+    response.headers["Content-Security-Policy"] = "default-src 'self' 'unsafe-inline' 'unsafe-eval' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net"
+    return response
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+# ... rest of codefrom fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
+import httpx
+from pydantic import BaseModel
+from pathlib import Path
+import random
+import string
+
+app = FastAPI(title="Temp Email ID Backend Node")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
